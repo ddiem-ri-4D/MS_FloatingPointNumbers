@@ -1,0 +1,38 @@
+use std::fs::{File, OpenOptions};
+use std::io::prelude::*;
+
+fn main() -> std::io::Result<()> {
+    let mut buffered_writer = get_buffer_writer("./float/rust.txt")?;
+    let a = 0b00000001_00000000_00000000_00000000; // 2^24
+    let b = 0b00000010_00000000_00000000_00000000; // 2^25
+    println!("a = {}", a);
+    println!("b = {}", b);
+
+    let start_time = std::time::Instant::now();
+    let mut n = 0;
+    for c in a..=b {
+        let formatted = format!("c = {:08} => {:8.1}\n", c, c as f32);
+        buffered_writer.write_all(formatted.as_bytes())?;
+        buffered_writer.flush()?;
+
+        if n == ((c - a) * 100 / a) as i32 {
+            n += 1;
+            println!("{}/100", n);
+        }
+    }
+    let elapsed_time = start_time.elapsed().as_millis();
+
+    println!("{}", elapsed_time);
+    buffered_writer.flush()?;
+    Ok(())
+}
+
+fn get_buffer_writer(file_name: &str) -> std::io::Result<std::io::BufWriter<File>> {
+    let _file = File::create(file_name)?;
+    let mut options = OpenOptions::new();
+    options.write(true);
+    options.truncate(true);
+    let raf = options.open(file_name)?;
+    raf.set_len(0)?;
+    Ok(std::io::BufWriter::new(raf))
+}
